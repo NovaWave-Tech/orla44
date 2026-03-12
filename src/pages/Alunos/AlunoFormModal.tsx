@@ -40,6 +40,7 @@ export interface AlunoData {
   turma_id: number | '' | null
   data_inicio: string
   dia_vencimento: number | ''
+  valor_mensalidade: number | ''
   notificacao_whatsapp: number
   situacao: number
   observacao: string
@@ -52,6 +53,7 @@ const emptyAluno: AlunoData = {
   turma_id: '',
   data_inicio: new Date().toISOString().slice(0, 10),
   dia_vencimento: '',
+  valor_mensalidade: '',
   notificacao_whatsapp: 1,
   situacao: 1,
   observacao: '',
@@ -83,6 +85,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
           ...aluno,
           turma_id: aluno.turma_id ?? '',
           data_inicio: aluno.data_inicio ?? new Date().toISOString().slice(0, 10),
+          valor_mensalidade: aluno.valor_mensalidade ?? '',
           observacao: aluno.observacao ?? '',
         })
       } else {
@@ -118,6 +121,9 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
     if (!form.dia_vencimento || Number(form.dia_vencimento) < 1 || Number(form.dia_vencimento) > 31) {
       errs.dia_vencimento = 'Dia de vencimento inválido (1-31)'
     }
+    if (!form.valor_mensalidade || Number(form.valor_mensalidade) <= 0) {
+      errs.valor_mensalidade = 'Valor da mensalidade é obrigatório'
+    }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -139,6 +145,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
         turma_id: form.turma_id ? Number(form.turma_id) : null,
         data_inicio: form.data_inicio || null,
         dia_vencimento: Number(form.dia_vencimento),
+        valor_mensalidade: Number(form.valor_mensalidade),
         notificacao_whatsapp: form.notificacao_whatsapp,
         situacao: form.situacao,
         observacao: form.observacao.trim() || null,
@@ -152,9 +159,34 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
         if (error) throw error
         toast({ title: 'Aluno atualizado com sucesso', status: 'success', duration: 3000 })
       } else {
-        const { error } = await supabase.from('aluno').insert(payload)
+        const { data: novoAluno, error } = await supabase
+          .from('aluno')
+          .insert(payload)
+          .select('idaluno')
+          .single()
         if (error) throw error
-        toast({ title: 'Aluno cadastrado com sucesso', status: 'success', duration: 3000 })
+
+        // Gera automaticamente a mensalidade do mês atual para o novo aluno
+        const now = new Date()
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+        const mesRef = `${meses[now.getMonth()]}/${now.getFullYear()}`
+        const ano = now.getFullYear()
+        const mes = now.getMonth() + 1
+        const diaVenc = Number(form.dia_vencimento)
+        const diasNoMes = new Date(ano, mes, 0).getDate()
+        const diaFinal = Math.min(diaVenc, diasNoMes)
+        const dataVencimento = `${ano}-${String(mes).padStart(2, '0')}-${String(diaFinal).padStart(2, '0')}`
+
+        await supabase.from('mensalidade').insert({
+          aluno_id: novoAluno.idaluno,
+          valor: Number(form.valor_mensalidade),
+          mes_referencia: mesRef,
+          data_vencimento: dataVencimento,
+          situacao: 0,
+        })
+
+        toast({ title: 'Aluno cadastrado com sucesso', description: `Mensalidade de ${mesRef} gerada automaticamente`, status: 'success', duration: 4000 })
       }
 
       onSaved()
@@ -277,7 +309,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
               </FormControl>
             </SimpleGrid>
 
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
               <FormControl>
                 <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
                   Data de Início
@@ -294,6 +326,28 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
                 />
               </FormControl>
 
+              <FormControl isInvalid={!!errors.valor_mensalidade} isRequired>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
+                  Valor da Mensalidade (R$)
+                </FormLabel>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  placeholder="Ex: 120.00"
+                  value={form.valor_mensalidade}
+                  onChange={(e) => handleChange('valor_mensalidade', e.target.value ? Number(e.target.value) : '')}
+                  rounded="xl"
+                  bg="gray.50"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  _focus={{ bg: 'white', borderColor: 'brand.500' }}
+                />
+                <FormErrorMessage>{errors.valor_mensalidade}</FormErrorMessage>
+              </FormControl>
+            </SimpleGrid>
+
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
               <FormControl isInvalid={!!errors.dia_vencimento} isRequired>
                 <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
                   Dia do Vencimento

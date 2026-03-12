@@ -9,16 +9,28 @@ const theme = extendTheme({
   config,
   colors: {
     brand: {
-      50: '#fff7ed',
-      100: '#ffedd5',
-      200: '#fed7aa',
-      300: '#fdba74',
-      400: '#fb923c',
-      500: '#f97316',  // Primary sunset orange
-      600: '#ea580c',
-      700: '#c2410c',
-      800: '#9a3412',
-      900: '#7c2d12',
+      50: '#f0fdf4',
+      100: '#dcfce7',
+      200: '#bbf7d0',
+      300: '#86efac',
+      400: '#4ade80',
+      500: '#22c55e',  // Primary Fitway green
+      600: '#16a34a',
+      700: '#15803d',
+      800: '#166534',
+      900: '#14532d',
+    },
+    accent: {
+      50: '#f7fee7',
+      100: '#ecfccb',
+      200: '#d9f99d',
+      300: '#bef264',
+      400: '#a3e635',
+      500: '#84cc16',  // Lime accent
+      600: '#65a30d',
+      700: '#4d7c0f',
+      800: '#3f6212',
+      900: '#365314',
     },
     sunset: {
       50: '#fef3f2',
@@ -26,7 +38,7 @@ const theme = extendTheme({
       200: '#fccfcc',
       300: '#f9a8a3',
       400: '#f4746c',
-      500: '#ea4c3d',  // Warm red
+      500: '#ea4c3d',
       600: '#d7301f',
       700: '#b52318',
       800: '#952118',
@@ -38,7 +50,7 @@ const theme = extendTheme({
       200: '#fde68a',
       300: '#fcd34d',
       400: '#fbbf24',
-      500: '#f59e0b',  // Golden yellow
+      500: '#f59e0b',
       600: '#d97706',
       700: '#b45309',
       800: '#92400e',
@@ -50,17 +62,17 @@ const theme = extendTheme({
       200: '#bbf7d0',
       300: '#86efac',
       400: '#4ade80',
-      500: '#22c55e',  // Palm green
+      500: '#22c55e',
       600: '#16a34a',
       700: '#15803d',
       800: '#166534',
       900: '#14532d',
     },
     sidebar: {
-      bg: '#1e1b2e',
-      hover: '#2a2740',
-      active: '#362f50',
-      border: '#3d3655',
+      bg: '#0f1a0f',
+      hover: '#1a2e1a',
+      active: '#1e3a1e',
+      border: '#2d4a2d',
     },
   },
   fonts: {
@@ -70,7 +82,7 @@ const theme = extendTheme({
   styles: {
     global: {
       body: {
-        bg: '#faf8f5',
+        bg: '#f4faf4',
       },
     },
   },

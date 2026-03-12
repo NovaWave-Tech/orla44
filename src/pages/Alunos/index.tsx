@@ -156,6 +156,7 @@ export default function AlunosPage() {
       turma_id: a.turma_id,
       data_inicio: a.data_inicio ?? '',
       dia_vencimento: a.dia_vencimento,
+      valor_mensalidade: (a as any).valor_mensalidade ?? '',
       notificacao_whatsapp: a.notificacao_whatsapp,
       situacao: a.situacao,
       observacao: a.observacao ?? '',

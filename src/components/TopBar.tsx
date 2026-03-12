@@ -48,7 +48,7 @@ export default function TopBar() {
       as="header"
       h="64px"
       px={{ base: 4, md: 6 }}
-      bg="#1e1b2e"
+      bg="#0f1a0f"
       borderBottom="1px solid"
       borderColor="whiteAlpha.100"
       align="center"
@@ -91,7 +91,7 @@ export default function TopBar() {
             boxSize="8px"
             bg="brand.500"
             rounded="full"
-            border="2px solid #1e1b2e"
+            border="2px solid #0f1a0f"
             p={0}
           />
         </Box>

@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <Flex
         display={{ base: 'none', lg: 'flex' }}
         w="50%"
-        bg="linear-gradient(160deg, #1e1b2e 0%, #4a1942 25%, #c2410c 55%, #f97316 75%, #fbbf24 100%)"
+        bg="linear-gradient(160deg, #0f1a0f 0%, #052e16 25%, #15803d 55%, #22c55e 75%, #84cc16 100%)"
         direction="column"
         align="center"
         justify="center"
@@ -60,8 +60,8 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
         {/* Logo */}
         <Image
-          src="/Orla44_sfundo.png"
-          alt="Orla44 Arena"
+          src="/ArenaFitway.jpg"
+          alt="ArenaFitway"
           w="220px"
           mb={8}
           zIndex={1}

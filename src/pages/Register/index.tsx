@@ -125,7 +125,7 @@ export default function RegisterPage() {
       <Box w="full" maxW="440px">
         {/* Mobile logo */}
         <Flex display={{ base: 'flex', lg: 'none' }} justify="center" mb={6}>
-          <Image src="/Orla44_sfundo.png" alt="Orla44 Arena" w="120px" />
+          <Image src="/ArenaFitway.jpg" alt="ArenaFitway" w="120px" borderRadius="lg" />
         </Flex>
 
         <Box bg="white" rounded="2xl" shadow="xl" p={{ base: 8, md: 10 }} border="1px solid" borderColor="gray.100">
@@ -292,7 +292,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <Text mt={6} textAlign="center" fontSize="xs" color="gray.400">
-          © {new Date().getFullYear()} Orla44 Arena — Todos os direitos reservados.
+          © {new Date().getFullYear()} ArenaFitway — Todos os direitos reservados.
         </Text>
       </Box>
     </AuthLayout>

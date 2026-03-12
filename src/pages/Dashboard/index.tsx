@@ -97,11 +97,14 @@ export default function DashboardPage() {
         .in('situacao', [0, 2])
 
       // Mensalidades do mês
-      const mesAtual = new Date().toISOString().slice(0, 7) // YYYY-MM
+      const now = new Date()
+      const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+      const mesAtualRef = `${mesesNomes[now.getMonth()]}/${now.getFullYear()}`
       const { count: mensalidadesMes } = await supabase
         .from('mensalidade')
         .select('*', { count: 'exact', head: true })
-        .like('mes_referencia', `%${mesAtual}%`)
+        .eq('mes_referencia', mesAtualRef)
 
       // Inadimplentes (alunos com mensalidades vencidas)
       const { data: inadimplentesData } = await supabase
@@ -140,12 +143,12 @@ export default function DashboardPage() {
 
       // Treinos de hoje
       const hoje = new Date()
-      const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+      const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
       const diaHoje = diasSemana[hoje.getDay()]
 
       const { data: turmasHoje } = await supabase
         .from('turma')
-        .select('nome, horario, dias_semana, modalidade:modalidade_id(nome)')
+        .select('idturma, nome, horario, dias_semana, modalidade:modalidade_id(nome)')
         .eq('situacao', 1)
         .ilike('dias_semana', `%${diaHoje}%`)
 

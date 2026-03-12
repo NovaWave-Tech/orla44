@@ -63,11 +63,11 @@ export default function Sidebar() {
           rounded="xl"
           cursor="pointer"
           transition="all 0.2s"
-          bg={active ? 'rgba(249,115,22,0.15)' : 'transparent'}
+          bg={active ? 'rgba(34,197,94,0.15)' : 'transparent'}
           color={active ? 'brand.400' : 'whiteAlpha.600'}
           fontWeight={active ? '600' : '400'}
           _hover={{
-            bg: active ? 'rgba(249,115,22,0.15)' : 'whiteAlpha.100',
+            bg: active ? 'rgba(34,197,94,0.15)' : 'whiteAlpha.100',
             color: active ? 'brand.400' : 'whiteAlpha.900',
           }}
           onClick={() => navigate(item.path)}
@@ -98,7 +98,7 @@ export default function Sidebar() {
       direction="column"
       w={{ base: '70px', xl: '240px' }}
       minH="100vh"
-      bg="#1e1b2e"
+      bg="#0f1a0f"
       py={5}
       px={{ base: 2, xl: 4 }}
       position="fixed"
@@ -118,22 +118,25 @@ export default function Sidebar() {
         onClick={() => navigate('/')}
       >
         <Image
-          src="/Orla44_sfundo.png"
-          alt="Orla44"
+          src="/ArenaFitway.jpg"
+          alt="ArenaFitway"
           w={{ base: '42px', xl: '42px' }}
-          filter="drop-shadow(0 2px 8px rgba(249,115,22,0.3))"
+          h={{ base: '42px', xl: '42px' }}
+          rounded="xl"
+          objectFit="cover"
+          filter="drop-shadow(0 2px 8px rgba(34,197,94,0.4))"
         />
         <Box display={{ base: 'none', xl: 'block' }}>
           <Text
-            fontSize="lg"
+            fontSize="md"
             fontWeight="bold"
             color="white"
             lineHeight="1.2"
           >
-            Orla44
+            Arena<Text as="span" color="brand.400">Fitway</Text>
           </Text>
           <Text fontSize="xs" color="whiteAlpha.500" fontWeight="400">
-            Arena
+            Gestão Esportiva
           </Text>
         </Box>
       </Flex>
