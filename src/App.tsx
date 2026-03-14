@@ -8,6 +8,9 @@ import TurmasPage from './pages/Turmas'
 import MensalidadesPage from './pages/Mensalidades'
 import PresencasPage from './pages/Presencas'
 import MensagensPage from './pages/Mensagens'
+import GastosPage from './pages/Gastos'
+import ConfiguracoesPage from './pages/Configuracoes'
+import NotificacoesPage from './pages/Notificacoes'
 import { PrivateRoute } from './components/PrivateRoute'
 
 function App() {
@@ -68,6 +71,30 @@ function App() {
         element={
           <PrivateRoute>
             <MensagensPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/gastos"
+        element={
+          <PrivateRoute>
+            <GastosPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/notificacoes"
+        element={
+          <PrivateRoute>
+            <NotificacoesPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/configuracoes"
+        element={
+          <PrivateRoute>
+            <ConfiguracoesPage />
           </PrivateRoute>
         }
       />

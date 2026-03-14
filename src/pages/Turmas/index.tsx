@@ -36,6 +36,14 @@ import {
   Tag,
   Wrap,
   WrapItem,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Avatar,
+  Divider,
 } from '@chakra-ui/react'
 import {
   FiPlus,
@@ -67,6 +75,13 @@ interface TurmaRow {
   _alunosCount?: number
 }
 
+interface AlunoSimples {
+  idaluno: number
+  nome: string
+  telefone: string
+  situacao: number
+}
+
 export default function TurmasPage() {
   const toast = useToast()
   const [turmas, setTurmas] = useState<TurmaRow[]>([])
@@ -84,6 +99,12 @@ export default function TurmasPage() {
   const { isOpen: isAlertOpen, onOpen: onAlertOpen, onClose: onAlertClose } = useDisclosure()
   const [togglingTurma, setTogglingTurma] = useState<TurmaRow | null>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
+
+  // Alunos da turma modal
+  const { isOpen: isAlunosOpen, onOpen: onAlunosOpen, onClose: onAlunosClose } = useDisclosure()
+  const [viewingTurma, setViewingTurma] = useState<TurmaRow | null>(null)
+  const [alunosTurma, setAlunosTurma] = useState<AlunoSimples[]>([])
+  const [loadingAlunos, setLoadingAlunos] = useState(false)
 
   useEffect(() => {
     loadTurmas()
@@ -104,10 +125,9 @@ export default function TurmasPage() {
       const turmasWithCount = await Promise.all(
         (data ?? []).map(async (t: any) => {
           const { count } = await supabase
-            .from('aluno')
-            .select('*', { count: 'exact', head: true })
+            .from('aluno_turma')
+            .select('aluno_id', { count: 'exact', head: true })
             .eq('turma_id', t.idturma)
-            .eq('situacao', 1)
           return { ...t, _alunosCount: count ?? 0 }
         })
       )
@@ -147,6 +167,27 @@ export default function TurmasPage() {
   const handleToggleStatus = (t: TurmaRow) => {
     setTogglingTurma(t)
     onAlertOpen()
+  }
+
+  const handleVerAlunos = async (t: TurmaRow) => {
+    setViewingTurma(t)
+    setAlunosTurma([])
+    onAlunosOpen()
+    setLoadingAlunos(true)
+    try {
+      const { data, error } = await supabase
+        .from('aluno_turma')
+        .select('aluno:aluno_id(idaluno, nome, telefone, situacao)')
+        .eq('turma_id', t.idturma)
+      if (error) throw error
+      const lista = (data ?? []).map((r: any) => r.aluno).filter(Boolean)
+      lista.sort((a: any, b: any) => a.nome.localeCompare(b.nome))
+      setAlunosTurma(lista)
+    } catch (err: any) {
+      toast({ title: 'Erro ao carregar alunos', description: err.message, status: 'error', duration: 4000 })
+    } finally {
+      setLoadingAlunos(false)
+    }
   }
 
   const confirmToggleStatus = async () => {
@@ -487,6 +528,15 @@ export default function TurmasPage() {
                           />
                           <MenuList shadow="xl" rounded="xl" border="1px solid" borderColor="gray.100" py={1} minW="160px">
                             <MenuItem
+                              icon={<Icon as={FiUsers} />}
+                              fontSize="sm"
+                              color="gray.600"
+                              _hover={{ bg: 'brand.50' }}
+                              onClick={() => handleVerAlunos(turma)}
+                            >
+                              Ver Alunos
+                            </MenuItem>
+                            <MenuItem
                               icon={<Icon as={FiEdit2} />}
                               fontSize="sm"
                               color="gray.600"
@@ -532,6 +582,56 @@ export default function TurmasPage() {
         turma={editingTurma}
         onSaved={loadTurmas}
       />
+
+      {/* Alunos da Turma Modal */}
+      <Modal isOpen={isAlunosOpen} onClose={onAlunosClose} size="md" isCentered scrollBehavior="inside">
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+        <ModalContent rounded="2xl" mx={4} maxH="80vh">
+          <ModalHeader fontSize="lg" fontWeight="700" color="gray.800" pb={1}>
+            {viewingTurma?.nome}
+            {!loadingAlunos && (
+              <Text as="span" fontSize="sm" fontWeight="400" color="gray.400" ml={2}>
+                · {alunosTurma.length} aluno{alunosTurma.length !== 1 ? 's' : ''}
+              </Text>
+            )}
+          </ModalHeader>
+          <ModalCloseButton rounded="xl" />
+          <ModalBody pb={5}>
+            {loadingAlunos ? (
+              <VStack spacing={3} py={2}>
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} h="56px" w="full" rounded="xl" />
+                ))}
+              </VStack>
+            ) : alunosTurma.length === 0 ? (
+              <Flex direction="column" align="center" py={10} gap={2}>
+                <Flex w={12} h={12} rounded="2xl" bg="gray.50" align="center" justify="center">
+                  <Icon as={FiUsers} boxSize={5} color="gray.300" />
+                </Flex>
+                <Text fontSize="sm" fontWeight="600" color="gray.400">Nenhum aluno nesta turma</Text>
+              </Flex>
+            ) : (
+              <VStack spacing={0} divider={<Divider borderColor="gray.50" />}>
+                {alunosTurma.map(a => (
+                  <Flex key={a.idaluno} w="full" align="center" gap={3} py={3}>
+                    <Avatar size="sm" name={a.nome} bg="brand.500" color="white" fontWeight="600" />
+                    <Box flex={1} minW={0}>
+                      <Text fontSize="sm" fontWeight="600" color="gray.800" noOfLines={1}>{a.nome}</Text>
+                      <Text fontSize="xs" color="gray.400">{a.telefone || '—'}</Text>
+                    </Box>
+                    <Badge
+                      colorScheme={a.situacao === 1 ? 'green' : 'gray'}
+                      rounded="full" px={2} fontSize="xs" fontWeight="600"
+                    >
+                      {a.situacao === 1 ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </Flex>
+                ))}
+              </VStack>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Toggle Status Dialog */}
       <AlertDialog isOpen={isAlertOpen} leastDestructiveRef={cancelRef as any} onClose={onAlertClose} isCentered>

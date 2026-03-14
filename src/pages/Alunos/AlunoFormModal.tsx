@@ -18,6 +18,11 @@ import {
   VStack,
   useToast,
   FormErrorMessage,
+  Checkbox,
+  Box,
+  Text,
+  Wrap,
+  WrapItem,
 } from '@chakra-ui/react'
 import { supabase } from '../../lib/supabase'
 
@@ -30,6 +35,7 @@ interface Turma {
   idturma: number
   nome: string
   modalidade_id: number
+  horario?: string
 }
 
 export interface AlunoData {
@@ -37,7 +43,7 @@ export interface AlunoData {
   nome: string
   telefone: string
   modalidade_id: number | ''
-  turma_id: number | '' | null
+  turma_ids: number[]
   data_inicio: string
   dia_vencimento: number | ''
   valor_mensalidade: number | ''
@@ -46,12 +52,14 @@ export interface AlunoData {
   observacao: string
 }
 
+const today = new Date().toISOString().slice(0, 10)
+
 const emptyAluno: AlunoData = {
   nome: '',
   telefone: '',
   modalidade_id: '',
-  turma_id: '',
-  data_inicio: new Date().toISOString().slice(0, 10),
+  turma_ids: [],
+  data_inicio: today,
   dia_vencimento: '',
   valor_mensalidade: '',
   notificacao_whatsapp: 1,
@@ -83,8 +91,8 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
       if (aluno) {
         setForm({
           ...aluno,
-          turma_id: aluno.turma_id ?? '',
-          data_inicio: aluno.data_inicio ?? new Date().toISOString().slice(0, 10),
+          turma_ids: aluno.turma_ids ?? [],
+          data_inicio: aluno.data_inicio ?? today,
           valor_mensalidade: aluno.valor_mensalidade ?? '',
           observacao: aluno.observacao ?? '',
         })
@@ -98,16 +106,22 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
   // Filter turmas when modalidade changes
   useEffect(() => {
     if (form.modalidade_id) {
-      setTurmasFiltradas(turmas.filter((t) => t.modalidade_id === Number(form.modalidade_id)))
+      const ft = turmas.filter(t => t.modalidade_id === Number(form.modalidade_id))
+      setTurmasFiltradas(ft)
+      setForm(prev => ({
+        ...prev,
+        turma_ids: prev.turma_ids.filter(id => ft.some(t => t.idturma === id)),
+      }))
     } else {
       setTurmasFiltradas([])
+      setForm(prev => ({ ...prev, turma_ids: [] }))
     }
   }, [form.modalidade_id, turmas])
 
   const loadSelects = async () => {
     const [{ data: mods }, { data: trs }] = await Promise.all([
       supabase.from('modalidade').select('idmodalidade, nome').eq('situacao', 1).order('nome'),
-      supabase.from('turma').select('idturma, nome, modalidade_id').eq('situacao', 1).order('nome'),
+      supabase.from('turma').select('idturma, nome, modalidade_id, horario').eq('situacao', 1).order('nome'),
     ])
     setModalidades(mods ?? [])
     setTurmas(trs ?? [])
@@ -129,8 +143,17 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
   }
 
   const handleChange = (field: keyof AlunoData, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
+    setForm(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+  }
+
+  const toggleTurma = (id: number) => {
+    setForm(prev => ({
+      ...prev,
+      turma_ids: prev.turma_ids.includes(id)
+        ? prev.turma_ids.filter(t => t !== id)
+        : [...prev.turma_ids, id],
+    }))
   }
 
   const handleSave = async () => {
@@ -142,7 +165,6 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
         nome: form.nome.trim(),
         telefone: form.telefone.trim(),
         modalidade_id: Number(form.modalidade_id),
-        turma_id: form.turma_id ? Number(form.turma_id) : null,
         data_inicio: form.data_inicio || null,
         dia_vencimento: Number(form.dia_vencimento),
         valor_mensalidade: Number(form.valor_mensalidade),
@@ -151,12 +173,15 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
         observacao: form.observacao.trim() || null,
       }
 
+      let alunoId: number
+
       if (isEditing) {
         const { error } = await supabase
           .from('aluno')
           .update(payload)
           .eq('idaluno', aluno!.idaluno)
         if (error) throw error
+        alunoId = aluno!.idaluno!
         toast({ title: 'Aluno atualizado com sucesso', status: 'success', duration: 3000 })
       } else {
         const { data: novoAluno, error } = await supabase
@@ -165,6 +190,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
           .select('idaluno')
           .single()
         if (error) throw error
+        alunoId = novoAluno.idaluno
 
         // Gera automaticamente a mensalidade do mês atual para o novo aluno
         const now = new Date()
@@ -179,14 +205,28 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
         const dataVencimento = `${ano}-${String(mes).padStart(2, '0')}-${String(diaFinal).padStart(2, '0')}`
 
         await supabase.from('mensalidade').insert({
-          aluno_id: novoAluno.idaluno,
+          aluno_id: alunoId,
           valor: Number(form.valor_mensalidade),
           mes_referencia: mesRef,
           data_vencimento: dataVencimento,
           situacao: 0,
         })
 
-        toast({ title: 'Aluno cadastrado com sucesso', description: `Mensalidade de ${mesRef} gerada automaticamente`, status: 'success', duration: 4000 })
+        toast({
+          title: 'Aluno cadastrado com sucesso',
+          description: `Mensalidade de ${mesRef} gerada automaticamente`,
+          status: 'success',
+          duration: 4000,
+        })
+      }
+
+      // Manage turmas junction table
+      await supabase.from('aluno_turma').delete().eq('aluno_id', alunoId)
+      if (form.turma_ids.length > 0) {
+        const { error: tErr } = await supabase.from('aluno_turma').insert(
+          form.turma_ids.map(tid => ({ aluno_id: alunoId, turma_id: tid }))
+        )
+        if (tErr) throw tErr
       }
 
       onSaved()
@@ -224,9 +264,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
           <VStack spacing={4}>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
               <FormControl isInvalid={!!errors.nome} isRequired>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Nome
-                </FormLabel>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Nome</FormLabel>
                 <Input
                   placeholder="Nome completo"
                   value={form.nome}
@@ -241,9 +279,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
               </FormControl>
 
               <FormControl isInvalid={!!errors.telefone} isRequired>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Telefone
-                </FormLabel>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Telefone</FormLabel>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={form.telefone}
@@ -258,62 +294,71 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
               </FormControl>
             </SimpleGrid>
 
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
-              <FormControl isInvalid={!!errors.modalidade_id} isRequired>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Modalidade
-                </FormLabel>
-                <Select
-                  placeholder="Selecione"
-                  value={form.modalidade_id}
-                  onChange={(e) => {
-                    handleChange('modalidade_id', e.target.value ? Number(e.target.value) : '')
-                    handleChange('turma_id', '')
-                  }}
-                  rounded="xl"
-                  bg="gray.50"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  _focus={{ bg: 'white', borderColor: 'brand.500' }}
-                >
-                  {modalidades.map((m) => (
-                    <option key={m.idmodalidade} value={m.idmodalidade}>
-                      {m.nome}
-                    </option>
-                  ))}
-                </Select>
-                <FormErrorMessage>{errors.modalidade_id}</FormErrorMessage>
-              </FormControl>
+            <FormControl isInvalid={!!errors.modalidade_id} isRequired>
+              <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Modalidade</FormLabel>
+              <Select
+                placeholder="Selecione"
+                value={form.modalidade_id}
+                onChange={(e) => handleChange('modalidade_id', e.target.value ? Number(e.target.value) : '')}
+                rounded="xl"
+                bg="gray.50"
+                border="1px solid"
+                borderColor="gray.200"
+                _focus={{ bg: 'white', borderColor: 'brand.500' }}
+              >
+                {modalidades.map(m => (
+                  <option key={m.idmodalidade} value={m.idmodalidade}>{m.nome}</option>
+                ))}
+              </Select>
+              <FormErrorMessage>{errors.modalidade_id}</FormErrorMessage>
+            </FormControl>
 
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Turma
-                </FormLabel>
-                <Select
-                  placeholder={turmasFiltradas.length ? 'Selecione' : 'Selecione a modalidade primeiro'}
-                  value={form.turma_id ?? ''}
-                  onChange={(e) => handleChange('turma_id', e.target.value ? Number(e.target.value) : null)}
-                  rounded="xl"
-                  bg="gray.50"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  _focus={{ bg: 'white', borderColor: 'brand.500' }}
-                  isDisabled={!form.modalidade_id}
-                >
-                  {turmasFiltradas.map((t) => (
-                    <option key={t.idturma} value={t.idturma}>
-                      {t.nome}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            </SimpleGrid>
+            {/* Turmas — multiple */}
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
+                Turmas
+                {form.turma_ids.length > 0 && (
+                  <Text as="span" fontSize="xs" color="brand.500" fontWeight="500" ml={1.5}>
+                    ({form.turma_ids.length} selecionada{form.turma_ids.length !== 1 ? 's' : ''})
+                  </Text>
+                )}
+              </FormLabel>
+              {!form.modalidade_id ? (
+                <Box px={4} py={3} bg="gray.50" rounded="xl" border="1px solid" borderColor="gray.200">
+                  <Text fontSize="sm" color="gray.400">Selecione uma modalidade primeiro</Text>
+                </Box>
+              ) : turmasFiltradas.length === 0 ? (
+                <Box px={4} py={3} bg="gray.50" rounded="xl" border="1px solid" borderColor="gray.200">
+                  <Text fontSize="sm" color="gray.400">Nenhuma turma disponível para esta modalidade</Text>
+                </Box>
+              ) : (
+                <Box px={4} py={3} bg="gray.50" rounded="xl" border="1px solid" borderColor="gray.200">
+                  <Wrap spacing={4}>
+                    {turmasFiltradas.map(t => (
+                      <WrapItem key={t.idturma}>
+                        <Checkbox
+                          isChecked={form.turma_ids.includes(t.idturma)}
+                          onChange={() => toggleTurma(t.idturma)}
+                          colorScheme="brand"
+                          size="md"
+                        >
+                          <Text fontSize="sm" color="gray.700">
+                            {t.nome}
+                            {t.horario && (
+                              <Text as="span" fontSize="xs" color="gray.400"> · {t.horario.slice(0, 5)}</Text>
+                            )}
+                          </Text>
+                        </Checkbox>
+                      </WrapItem>
+                    ))}
+                  </Wrap>
+                </Box>
+              )}
+            </FormControl>
 
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
               <FormControl>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Data de Início
-                </FormLabel>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Data de Início</FormLabel>
                 <Input
                   type="date"
                   value={form.data_inicio}
@@ -327,9 +372,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
               </FormControl>
 
               <FormControl isInvalid={!!errors.valor_mensalidade} isRequired>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Valor da Mensalidade (R$)
-                </FormLabel>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Valor da Mensalidade (R$)</FormLabel>
                 <Input
                   type="number"
                   min={0}
@@ -349,9 +392,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
 
             <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
               <FormControl isInvalid={!!errors.dia_vencimento} isRequired>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Dia do Vencimento
-                </FormLabel>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Dia do Vencimento</FormLabel>
                 <Input
                   type="number"
                   min={1}
@@ -369,9 +410,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
               </FormControl>
 
               <FormControl>
-                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                  Status
-                </FormLabel>
+                <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Status</FormLabel>
                 <Select
                   value={form.situacao}
                   onChange={(e) => handleChange('situacao', Number(e.target.value))}
@@ -400,9 +439,7 @@ export default function AlunoFormModal({ isOpen, onClose, aluno, onSaved }: Alun
             </FormControl>
 
             <FormControl>
-              <FormLabel fontSize="sm" fontWeight="600" color="gray.600">
-                Observações
-              </FormLabel>
+              <FormLabel fontSize="sm" fontWeight="600" color="gray.600">Observações</FormLabel>
               <Textarea
                 placeholder="Observações sobre o aluno..."
                 value={form.observacao}

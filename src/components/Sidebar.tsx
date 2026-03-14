@@ -14,6 +14,7 @@ import {
   FiGrid,
   FiLayers,
   FiDollarSign,
+  FiTrendingDown,
   FiCheckSquare,
   FiMessageSquare,
   FiBell,
@@ -35,6 +36,7 @@ const mainNav: NavItem[] = [
   { label: 'Modalidades', icon: FiGrid, path: '/modalidades' },
   { label: 'Turmas', icon: FiLayers, path: '/turmas' },
   { label: 'Mensalidades', icon: FiDollarSign, path: '/mensalidades' },
+  { label: 'Gastos', icon: FiTrendingDown, path: '/gastos' },
   { label: 'Presenças', icon: FiCheckSquare, path: '/presencas' },
 ]
 

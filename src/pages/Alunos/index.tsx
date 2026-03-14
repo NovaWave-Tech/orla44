@@ -71,7 +71,6 @@ interface AlunoRow {
   nome: string
   telefone: string
   modalidade_id: number
-  turma_id: number | null
   data_inicio: string | null
   dia_vencimento: number
   notificacao_whatsapp: number
@@ -79,7 +78,7 @@ interface AlunoRow {
   observacao: string | null
   criado_em: string
   modalidade?: { nome: string }
-  turma?: { nome: string; horario: string; dias_semana: string }
+  aluno_turma?: { turma_id: number; turma?: { nome: string; horario: string } }[]
 }
 
 interface Mensalidade {
@@ -125,7 +124,7 @@ export default function AlunosPage() {
     try {
       const { data, error } = await supabase
         .from('aluno')
-        .select('*, modalidade:modalidade_id(nome), turma:turma_id(nome, horario, dias_semana)')
+        .select('*, modalidade:modalidade_id(nome), aluno_turma(turma_id, turma:turma_id(nome, horario))')
         .order('nome')
 
       if (error) throw error
@@ -153,7 +152,7 @@ export default function AlunosPage() {
       nome: a.nome,
       telefone: a.telefone,
       modalidade_id: a.modalidade_id,
-      turma_id: a.turma_id,
+      turma_ids: a.aluno_turma?.map(at => at.turma_id) ?? [],
       data_inicio: a.data_inicio ?? '',
       dia_vencimento: a.dia_vencimento,
       valor_mensalidade: (a as any).valor_mensalidade ?? '',
@@ -512,15 +511,15 @@ export default function AlunosPage() {
                         </HStack>
                       </Td>
                       <Td py={3} display={{ base: 'none', lg: 'table-cell' }}>
-                        <VStack align="start" spacing={0}>
+                        <VStack align="start" spacing={1}>
                           <Tag size="sm" colorScheme="brand" variant="subtle" rounded="full">
                             {aluno.modalidade?.nome ?? '—'}
                           </Tag>
-                          {aluno.turma && (
-                            <Text fontSize="xs" color="gray.400" mt={1}>
-                              {aluno.turma.nome} • {aluno.turma.horario?.slice(0, 5)}
+                          {aluno.aluno_turma && aluno.aluno_turma.length > 0 && aluno.aluno_turma.map(at => (
+                            <Text key={at.turma_id} fontSize="xs" color="gray.400">
+                              {at.turma?.nome}{at.turma?.horario ? ` · ${at.turma.horario.slice(0, 5)}` : ''}
                             </Text>
-                          )}
+                          ))}
                         </VStack>
                       </Td>
                       <Td py={3} display={{ base: 'none', md: 'table-cell' }}>
